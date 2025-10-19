@@ -33,7 +33,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
+       /* title: Text(
           _selectedIndex == 0
               ? 'Tendencias'
               : _selectedIndex == 1
@@ -43,7 +43,7 @@ class _MainScreenState extends State<MainScreen> {
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
-        ),
+        ),*/
         backgroundColor: Colors.blue.shade700,
         elevation: 0,
         actions: [
