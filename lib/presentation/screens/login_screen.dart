@@ -1,9 +1,9 @@
 // ========== login_screen.dart ==========
 import 'package:flutter/material.dart';
-import './dashboard/dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  final void Function(String username)? onLogin;
+  const LoginScreen({super.key, this.onLogin});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -36,15 +36,8 @@ class _LoginScreenState extends State<LoginScreen> {
         _isLoading = false;
       });
 
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DashboardScreen(
-              username: _usernameController.text,
-            ),
-          ),
-        );
+      if (mounted && widget.onLogin != null) {
+        widget.onLogin!(_usernameController.text);
       }
     }
   }
@@ -57,10 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.blue.shade800,
-              Colors.blue.shade400,
-            ],
+            colors: [Colors.blue.shade800, Colors.blue.shade100],
           ),
         ),
         child: SafeArea(
@@ -79,15 +69,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.lock_outline,
-                          size: 80,
-                          color: Colors.blue.shade700,
-                        ),
+                        Image.asset('assets/lock.png', width: 80, height: 80),
                         const SizedBox(height: 24),
                         Text(
                           'Iniciar Sesión',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.blue.shade900,
                               ),
@@ -101,6 +88,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             prefixIcon: const Icon(Icons.person_outline),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: Colors.blue,
+                                width: 2.0,
+                              ),
                             ),
                             filled: true,
                             fillColor: Colors.grey.shade50,
@@ -134,6 +128,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: Colors.blue,
+                                width: 2.0,
+                              ),
                             ),
                             filled: true,
                             fillColor: Colors.grey.shade50,

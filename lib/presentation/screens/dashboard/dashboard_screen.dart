@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
 import './widgets/sensor_card.dart';
+// import '../chat/widgets/custom_bottom_bar.dart';
+// import '../trending_screen.dart';
+// import '../map_screen.dart';
+import '../gemini_screen.dart';
+
 class DashboardScreen extends StatefulWidget {
   final String username;
 
-  const DashboardScreen({
-    Key? key,
-    required this.username,
-  }) : super(key: key);
+  const DashboardScreen({super.key, required this.username});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
+  // Fin de clase
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  late ScrollController _scrollController;
+  double _scrollOpacity = 1.0;
+
   // Datos simulados de sensores
   final List<Map<String, dynamic>> _sensorsData = [
     {
@@ -60,112 +66,170 @@ class _DashboardScreenState extends State<DashboardScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    double scrollPosition = _scrollController.offset;
+    double newOpacity = 1.0 - (scrollPosition / 150).clamp(0.0, 1.0);
+
+    if (newOpacity != _scrollOpacity) {
+      setState(() {
+        _scrollOpacity = newOpacity;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Dashboard',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Colors.blue.shade700, Colors.grey.shade50],
+          stops: const [0.0, 0.35],
         ),
-        backgroundColor: Colors.blue.shade700,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () {
-              setState(() {
-                // Simular actualización de datos
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Datos actualizados'),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
-              });
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
-        ],
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.blue.shade700,
-              Colors.grey.shade100,
-            ],
-            stops: const [0.0, 0.3],
-          ),
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '¡Hola, ${widget.username}!',
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+      child: Stack(
+        children: [
+          CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              SliverAppBar(
+                pinned: false,
+                floating: true,
+                snap: true,
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+                expandedHeight: 90,
+                title: AnimatedOpacity(
+                  opacity: _scrollOpacity,
+                  duration: const Duration(milliseconds: 200),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '¡Hola, ${widget.username}!',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Monitoreo de sensores en tiempo real',
+                          style: TextStyle(fontSize: 16, color: Colors.white70),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Monitoreo de sensores en tiempo real',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
                   ),
                 ),
-                child: GridView.builder(
-                  padding: const EdgeInsets.all(20.0),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.85,
+              ),
+              SliverToBoxAdapter(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(30),
+                      topRight: Radius.circular(30),
+                    ),
                   ),
-                  itemCount: _sensorsData.length,
-                  itemBuilder: (context, index) {
-                    final sensor = _sensorsData[index];
-                    return SensorCard(
-                      sensorName: sensor['name'],
-                      reading: sensor['reading'],
-                      readingDate: sensor['date'],
-                      icon: sensor['icon'],
-                      color: sensor['color'],
+                  child: GridView.builder(
+                    padding: const EdgeInsets.all(20.0),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 2,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: 0.85,
+                        ),
+                    itemCount: _sensorsData.length,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemBuilder: (context, index) {
+                      final sensor = _sensorsData[index];
+                      return SensorCard(
+                        sensorName: sensor['name'],
+                        reading: sensor['reading'],
+                        readingDate: sensor['date'],
+                        icon: sensor['icon'],
+                        color: sensor['color'],
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Positioned(
+            bottom: 24,
+            right: 24,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: Material(
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 4,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        // Acción de la cámara
+                      },
+                      child: SizedBox(
+                        width: 56,
+                        height: 56,
+                        child: Icon(
+                          Icons.camera_alt,
+                          color: Colors.blue.shade700,
+                          size: 32,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                FloatingActionButton(
+                  heroTag: 'gemini',
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            // Asegúrate de importar GeminiScreen arriba
+                            GeminiScreen(),
+                      ),
                     );
                   },
+                  backgroundColor: Colors.white,
+                  child: Image.asset(
+                    'assets/gemini.png',
+                    width: 32,
+                    height: 32,
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
