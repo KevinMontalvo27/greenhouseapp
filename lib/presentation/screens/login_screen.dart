@@ -1,8 +1,8 @@
-// ========== login_screen.dart ==========
 import 'package:flutter/material.dart';
+import 'package:greenhouse/services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
-  final void Function(String username)? onLogin;
+  final void Function(String username, int userId)? onLogin;
   const LoginScreen({super.key, this.onLogin});
 
   @override
@@ -29,17 +29,51 @@ class _LoginScreenState extends State<LoginScreen> {
         _isLoading = true;
       });
 
-      // Simular llamada a API
-      await Future.delayed(const Duration(seconds: 2));
+      try {
+        final result = await ApiService.login(
+          _usernameController.text,
+          _passwordController.text,
+        );
 
-      setState(() {
-        _isLoading = false;
-      });
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
 
-      if (mounted && widget.onLogin != null) {
-        widget.onLogin!(_usernameController.text);
+          if (result['success']) {
+            final data = result['data'];
+            if (widget.onLogin != null) {
+              widget.onLogin!(data['username'], data['user_id']);
+            }
+          } else {
+            _showErrorDialog(result['message'] ?? 'Error al iniciar sesión');
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          _showErrorDialog('Error de conexión: ${e.toString()}');
+        }
       }
     }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -73,11 +107,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 24),
                         Text(
                           'Iniciar Sesión',
-                          style: Theme.of(context).textTheme.headlineMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue.shade900,
-                              ),
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade900,
+                          ),
                         ),
                         const SizedBox(height: 32),
                         TextFormField(
@@ -102,6 +135,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Por favor ingresa tu usuario';
+                            }
+                            if (value.length < 3) {
+                              return 'El usuario debe tener al menos 3 caracteres';
                             }
                             return null;
                           },

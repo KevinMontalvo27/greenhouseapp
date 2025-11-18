@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import './widgets/sensor_card.dart';
-// import '../chat/widgets/custom_bottom_bar.dart';
-// import '../trending_screen.dart';
-// import '../map_screen.dart';
 import '../gemini_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final String username;
+  final int userId;
 
-  const DashboardScreen({super.key, required this.username});
+  const DashboardScreen({
+    super.key,
+    required this.username,
+    required this.userId,
+  });
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
-  // Fin de clase
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
@@ -151,13 +152,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   child: GridView.builder(
                     padding: const EdgeInsets.all(20.0),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 2,
-                          mainAxisSpacing: 10,
-                          childAspectRatio: 0.85,
-                        ),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 2,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 0.85,
+                    ),
                     itemCount: _sensorsData.length,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -195,6 +195,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       borderRadius: BorderRadius.circular(12),
                       onTap: () {
                         // Acción de la cámara
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Función de cámara próximamente'),
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
                       },
                       child: SizedBox(
                         width: 56,
@@ -213,9 +219,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) =>
-                            // Asegúrate de importar GeminiScreen arriba
-                            GeminiScreen(),
+                        builder: (context) => const GeminiScreen(),
                       ),
                     );
                   },

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:greenhouse/presentation/screens/login_screen.dart';
-import 'package:greenhouse/presentation/screens/main_screen.dart';
+import 'presentation/screens/login_screen.dart';
+import 'presentation/screens/main_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,10 +12,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Login App',
+      title: 'Greenhouse App',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
-      home: LoginScreenWrapper(),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true,
+      ),
+      home: const LoginScreenWrapper(),
     );
   }
 }
@@ -30,11 +33,13 @@ class LoginScreenWrapper extends StatefulWidget {
 class _LoginScreenWrapperState extends State<LoginScreenWrapper> {
   bool _loggedIn = false;
   String _username = 'Usuario';
+  int _userId = 0;
 
-  void _onLogin(String username) {
+  void _onLogin(String username, int userId) {
     setState(() {
       _loggedIn = true;
       _username = username;
+      _userId = userId;
     });
   }
 
@@ -43,6 +48,7 @@ class _LoginScreenWrapperState extends State<LoginScreenWrapper> {
     if (_loggedIn) {
       return MainScreen(
         username: _username,
+        userId: _userId,
         onLogout: () {
           setState(() {
             _loggedIn = false;

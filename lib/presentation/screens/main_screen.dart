@@ -2,12 +2,19 @@ import 'package:flutter/material.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'trending_screen.dart';
 import 'map_screen.dart';
-import 'widgets/custom_bottom_bar.dart'; // Ensure the path is correct
+import 'widgets/custom_bottom_bar.dart';
 
 class MainScreen extends StatefulWidget {
   final String username;
+  final int userId;
   final VoidCallback? onLogout;
-  const MainScreen({super.key, required this.username, this.onLogout});
+  
+  const MainScreen({
+    super.key,
+    required this.username,
+    required this.userId,
+    this.onLogout,
+  });
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -19,13 +26,19 @@ class _MainScreenState extends State<MainScreen> {
   Widget _getBody() {
     switch (_selectedIndex) {
       case 0:
-        return TrendingScreen();
+        return const TrendingScreen();
       case 1:
-        return DashboardScreen(username: widget.username);
+        return DashboardScreen(
+          username: widget.username,
+          userId: widget.userId,
+        );
       case 2:
-        return MapScreen();
+        return const MapScreen();
       default:
-        return DashboardScreen(username: widget.username);
+        return DashboardScreen(
+          username: widget.username,
+          userId: widget.userId,
+        );
     }
   }
 
@@ -33,17 +46,6 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-       /* title: Text(
-          _selectedIndex == 0
-              ? 'Tendencias'
-              : _selectedIndex == 1
-              ? 'Dashboard'
-              : 'Mapa',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),*/
         backgroundColor: Colors.blue.shade700,
         elevation: 0,
         actions: [
@@ -62,9 +64,28 @@ class _MainScreenState extends State<MainScreen> {
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: () {
-              if (widget.onLogout != null) {
-                widget.onLogout!();
-              }
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Cerrar sesión'),
+                  content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancelar'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        if (widget.onLogout != null) {
+                          widget.onLogout!();
+                        }
+                      },
+                      child: const Text('Cerrar sesión'),
+                    ),
+                  ],
+                ),
+              );
             },
           ),
         ],
