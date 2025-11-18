@@ -103,7 +103,7 @@ class _MapScreenState extends State<MapScreen> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(20),
                           child: Image(
-                            image: const AssetImage('assets/invernadero.png'),
+                            image: const AssetImage('assets/invernadero.jpg'),
                             width: 350,
                             height: 350,
                             fit: BoxFit.cover,
