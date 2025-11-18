@@ -18,7 +18,6 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   late ScrollController _scrollController;
-  double _scrollOpacity = 1.0;
 
   // Datos simulados de sensores
   final List<Map<String, dynamic>> _sensorsData = [
@@ -70,25 +69,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    double scrollPosition = _scrollController.offset;
-    double newOpacity = 1.0 - (scrollPosition / 150).clamp(0.0, 1.0);
-
-    if (newOpacity != _scrollOpacity) {
-      setState(() {
-        _scrollOpacity = newOpacity;
-      });
-    }
   }
 
   @override
@@ -104,43 +90,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Stack(
         children: [
+          // Capa 1: Encabezado fijo con título
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 100,
+            child: Padding(
+              padding: const EdgeInsets.only(
+                left: 24.0,
+                right: 24.0,
+                top: 16.0,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '¡Hola, ${widget.username}!',
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Monitoreo de sensores en tiempo real',
+                    style: TextStyle(fontSize: 14, color: Colors.white70),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Capa 2: Contenido desplazable que tapa la capa 1
           CustomScrollView(
             controller: _scrollController,
             slivers: [
-              SliverAppBar(
-                pinned: false,
-                floating: true,
-                snap: true,
-                elevation: 0,
-                backgroundColor: Colors.transparent,
-                expandedHeight: 90,
-                title: AnimatedOpacity(
-                  opacity: _scrollOpacity,
-                  duration: const Duration(milliseconds: 200),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '¡Hola, ${widget.username}!',
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Monitoreo de sensores en tiempo real',
-                          style: TextStyle(fontSize: 16, color: Colors.white70),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              SliverToBoxAdapter(child: SizedBox(height: 100)),
               SliverToBoxAdapter(
                 child: Container(
                   decoration: BoxDecoration(
@@ -152,12 +139,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   child: GridView.builder(
                     padding: const EdgeInsets.all(20.0),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 2,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: 0.85,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 2,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: 0.85,
+                        ),
                     itemCount: _sensorsData.length,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),

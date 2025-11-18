@@ -10,7 +10,6 @@ class TrendingScreen extends StatefulWidget {
 
 class _TrendingScreenState extends State<TrendingScreen> {
   late ScrollController _scrollController;
-  double _scrollOpacity = 1.0;
 
   final List<Map<String, dynamic>> _trendingData = [
     {'day': 'Lun', 'temperature': 22.5, 'humidity': 60.0, 'light': 800.0},
@@ -29,15 +28,8 @@ class _TrendingScreenState extends State<TrendingScreen> {
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController()..addListener(_onScroll);
+    _scrollController = ScrollController();
     _generatePlantHealthData();
-  }
-
-  void _onScroll() {
-    double newOpacity = 1.0 - (_scrollController.offset / 150).clamp(0.0, 1.0);
-    if (newOpacity != _scrollOpacity) {
-      setState(() => _scrollOpacity = newOpacity);
-    }
   }
 
   void _generatePlantHealthData() {
@@ -73,32 +65,34 @@ class _TrendingScreenState extends State<TrendingScreen> {
             stops: const [0.0, 0.35],
           ),
         ),
-        child: CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            SliverAppBar(
-              pinned: false,
-              floating: true,
-              snap: true,
-              elevation: 0,
-              backgroundColor: Colors.transparent,
-              expandedHeight: 100,
-              title: AnimatedOpacity(
-                opacity: _scrollOpacity,
-                duration: const Duration(milliseconds: 200),
-                child: const Column(
+        child: Stack(
+          children: [
+            // Capa 1: Encabezado fijo con título
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 100,
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  left: 24.0,
+                  right: 24.0,
+                  top: 16.0,
+                ),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      'Tendencias de las últimas semanas',
+                    const Text(
+                      'Tendencias semanales',
                       style: TextStyle(
-                        fontSize: 22,
+                        fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
-                    SizedBox(height: 6),
-                    Text(
+                    const SizedBox(height: 6),
+                    const Text(
                       'Analiza el comportamiento de tus sensores',
                       style: TextStyle(fontSize: 14, color: Colors.white70),
                     ),
@@ -106,30 +100,54 @@ class _TrendingScreenState extends State<TrendingScreen> {
                 ),
               ),
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _sectionTitle('Temperatura (°C)'),
-                    _buildBarChart(_trendingData, 'temperature', Colors.orange),
-                    const SizedBox(height: 32),
-                    _sectionTitle('Humedad (%)'),
-                    _buildBarChart(_trendingData, 'humidity', Colors.blue),
-                    const SizedBox(height: 32),
-                    _sectionTitle('Luz (lux)'),
-                    _buildBarChart(_trendingData, 'light', Colors.amber),
-                    const SizedBox(height: 32),
-                    _sectionTitle('Tendencia del clima'),
-                    _buildClimateLineChart(_trendingData),
-                    const SizedBox(height: 32),
-                    _sectionTitle('Salud de las plantas'),
-                    _buildPlantHealthSection(),
-                    const SizedBox(height: 40),
-                  ],
+            // Capa 2: Contenido desplazable que tapa la capa 1
+            CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                SliverToBoxAdapter(child: SizedBox(height: 100)),
+                SliverToBoxAdapter(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(30),
+                        topRight: Radius.circular(30),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _sectionTitle('Temperatura (°C)'),
+                          _buildBarChart(
+                            _trendingData,
+                            'temperature',
+                            Colors.orange,
+                          ),
+                          const SizedBox(height: 32),
+                          _sectionTitle('Humedad (%)'),
+                          _buildBarChart(
+                            _trendingData,
+                            'humidity',
+                            Colors.blue,
+                          ),
+                          const SizedBox(height: 32),
+                          _sectionTitle('Luz (lux)'),
+                          _buildBarChart(_trendingData, 'light', Colors.amber),
+                          const SizedBox(height: 32),
+                          _sectionTitle('Tendencia del clima'),
+                          _buildClimateLineChart(_trendingData),
+                          const SizedBox(height: 32),
+                          _sectionTitle('Salud de las plantas'),
+                          _buildPlantHealthSection(),
+                          const SizedBox(height: 40),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
@@ -138,18 +156,22 @@ class _TrendingScreenState extends State<TrendingScreen> {
   }
 
   Widget _sectionTitle(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Text(
+      text,
+      style: const TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: Colors.grey,
+      ),
+    ),
+  );
 
-  Widget _buildBarChart(List<Map<String, dynamic>> data, String key, Color color) {
+  Widget _buildBarChart(
+    List<Map<String, dynamic>> data,
+    String key,
+    Color color,
+  ) {
     return Container(
       height: 200,
       width: double.infinity,
@@ -166,9 +188,7 @@ class _TrendingScreenState extends State<TrendingScreen> {
         ],
       ),
       padding: const EdgeInsets.all(16),
-      child: CustomPaint(
-        painter: BarChartPainter(data, key, color),
-      ),
+      child: CustomPaint(painter: BarChartPainter(data, key, color)),
     );
   }
 
@@ -189,9 +209,7 @@ class _TrendingScreenState extends State<TrendingScreen> {
         ],
       ),
       padding: const EdgeInsets.all(16),
-      child: CustomPaint(
-        painter: ClimateLineChartPainter(data),
-      ),
+      child: CustomPaint(painter: ClimateLineChartPainter(data)),
     );
   }
 
@@ -219,7 +237,9 @@ class _TrendingScreenState extends State<TrendingScreen> {
             value: _selectedPlant,
             isExpanded: true,
             underline: const SizedBox(),
-            items: _plants.map((p) => DropdownMenuItem(value: p, child: Text(p))).toList(),
+            items: _plants
+                .map((p) => DropdownMenuItem(value: p, child: Text(p)))
+                .toList(),
             onChanged: (value) => setState(() => _selectedPlant = value!),
           ),
         ),
@@ -239,9 +259,7 @@ class _TrendingScreenState extends State<TrendingScreen> {
             ],
           ),
           padding: const EdgeInsets.all(16),
-          child: CustomPaint(
-            painter: PlantHealthChartPainter(plantData),
-          ),
+          child: CustomPaint(painter: PlantHealthChartPainter(plantData)),
         ),
       ],
     );
@@ -253,7 +271,7 @@ class BarChartPainter extends CustomPainter {
   final List<Map<String, dynamic>> data;
   final String keyName;
   final Color color;
-  
+
   BarChartPainter(this.data, this.keyName, this.color);
 
   @override
@@ -261,7 +279,7 @@ class BarChartPainter extends CustomPainter {
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
-    
+
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
     final barWidth = size.width / (data.length * 2);
     final spacing = barWidth * 0.5;
@@ -272,7 +290,7 @@ class BarChartPainter extends CustomPainter {
     final range = maxVal - minVal;
     final scale = range > 0 ? (size.height * 0.7) / range : 0;
 
-      for (int i = 0; i < data.length; i++) {
+    for (int i = 0; i < data.length; i++) {
       final value = (data[i][keyName] as num).toDouble();
       final normalizedHeight = range > 0 ? (value - minVal) * scale : 0;
       final x = spacing + i * (barWidth + spacing);
@@ -280,7 +298,12 @@ class BarChartPainter extends CustomPainter {
 
       canvas.drawRRect(
         RRect.fromRectAndRadius(
-          Rect.fromLTWH(x.toDouble(), y.toDouble(), barWidth.toDouble(), normalizedHeight.toDouble()),
+          Rect.fromLTWH(
+            x.toDouble(),
+            y.toDouble(),
+            barWidth.toDouble(),
+            normalizedHeight.toDouble(),
+          ),
           const Radius.circular(6),
         ),
         paint,
@@ -304,7 +327,7 @@ class BarChartPainter extends CustomPainter {
 
 class ClimateLineChartPainter extends CustomPainter {
   final List<Map<String, dynamic>> data;
-  
+
   ClimateLineChartPainter(this.data);
 
   @override
@@ -313,20 +336,24 @@ class ClimateLineChartPainter extends CustomPainter {
       ..color = Colors.red
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
-    
+
     final humPaint = Paint()
       ..color = Colors.blue
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
 
-    final tempValues = data.map((e) => (e['temperature'] as num).toDouble()).toList();
-    final humValues = data.map((e) => (e['humidity'] as num).toDouble()).toList();
-    
+    final tempValues = data
+        .map((e) => (e['temperature'] as num).toDouble())
+        .toList();
+    final humValues = data
+        .map((e) => (e['humidity'] as num).toDouble())
+        .toList();
+
     final tMin = tempValues.reduce(min);
     final tMax = tempValues.reduce(max);
     final hMin = humValues.reduce(min);
     final hMax = humValues.reduce(max);
-    
+
     final tRange = tMax - tMin;
     final hRange = hMax - hMin;
 
@@ -338,7 +365,7 @@ class ClimateLineChartPainter extends CustomPainter {
       final t = (data[i]['temperature'] as num).toDouble();
       final h = (data[i]['humidity'] as num).toDouble();
       final x = i * spacing;
-      final yT = tRange > 0 
+      final yT = tRange > 0
           ? size.height - ((t - tMin) / tRange) * size.height * 0.8
           : size.height * 0.5;
       final yH = hRange > 0
@@ -364,7 +391,7 @@ class ClimateLineChartPainter extends CustomPainter {
 
 class PlantHealthChartPainter extends CustomPainter {
   final List<Map<String, dynamic>> data;
-  
+
   PlantHealthChartPainter(this.data);
 
   @override
@@ -373,11 +400,13 @@ class PlantHealthChartPainter extends CustomPainter {
       ..color = Colors.green
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke;
-    
+
     final path = Path();
     final spacing = size.width / (data.length - 1);
 
-    final healthValues = data.map((e) => (e['health'] as num).toDouble()).toList();
+    final healthValues = data
+        .map((e) => (e['health'] as num).toDouble())
+        .toList();
     final minVal = healthValues.reduce(min);
     final maxVal = healthValues.reduce(max);
     final range = maxVal - minVal;
