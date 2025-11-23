@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import './widgets/sensor_card.dart';
 import '../gemini_screen.dart';
+import '../plant_analysis_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final String username;
@@ -182,11 +183,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
                       onTap: () {
-                        // Acción de la cámara
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Función de cámara próximamente'),
-                            duration: Duration(seconds: 1),
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const PlantAnalysisScreen(),
                           ),
                         );
                       },
