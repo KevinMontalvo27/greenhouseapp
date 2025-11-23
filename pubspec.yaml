@@ -12,6 +12,7 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   http: ^1.1.0 # ← AGREGADO para hacer peticiones HTTP
+  image_picker: ^1.0.7
 
 dev_dependencies:
   flutter_test:
