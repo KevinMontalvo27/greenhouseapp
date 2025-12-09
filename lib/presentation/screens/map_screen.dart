@@ -36,22 +36,18 @@ class _MapScreenState extends State<MapScreen> {
       child: Stack(
         children: [
           // Capa 1: Encabezado fijo con título
-          Positioned(
+          const Positioned(
             top: 0,
             left: 0,
             right: 0,
             height: 100,
             child: Padding(
-              padding: const EdgeInsets.only(
-                left: 24.0,
-                right: 24.0,
-                top: 16.0,
-              ),
+              padding: EdgeInsets.only(left: 24.0, right: 24.0, top: 16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'Mapa del invernadero',
                     style: TextStyle(
                       fontSize: 28,
@@ -59,8 +55,8 @@ class _MapScreenState extends State<MapScreen> {
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  const Text(
+                  SizedBox(height: 6),
+                  Text(
                     'Visualiza la distribución de tus plantas',
                     style: TextStyle(fontSize: 14, color: Colors.white70),
                   ),
@@ -72,7 +68,7 @@ class _MapScreenState extends State<MapScreen> {
           CustomScrollView(
             controller: _scrollController,
             slivers: [
-              SliverToBoxAdapter(child: SizedBox(height: 100)),
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
               SliverToBoxAdapter(
                 child: Container(
                   decoration: BoxDecoration(
@@ -89,8 +85,8 @@ class _MapScreenState extends State<MapScreen> {
                       child: Center(
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(20),
-                          child: Image(
-                            image: const AssetImage('assets/invernadero.jpg'),
+                          child: const Image(
+                            image: AssetImage('assets/invernadero.jpg'),
                             width: 350,
                             height: 350,
                             fit: BoxFit.cover,

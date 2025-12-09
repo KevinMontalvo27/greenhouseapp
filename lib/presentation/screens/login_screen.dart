@@ -15,6 +15,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
+  int _tapCount = 0;
+  bool _showDevButton = false;
 
   @override
   void dispose() {
@@ -76,179 +78,195 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  void _handleDevTap() {
+    setState(() {
+      _tapCount++;
+      if (_tapCount >= 5) {
+        _showDevButton = true;
+        _tapCount = 0;
+      }
+    });
+  }
+
+  void _skipLogin() {
+    if (widget.onLogin != null) {
+      widget.onLogin!('Usuario Demo', 1);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.blue.shade800, Colors.blue.shade100],
+      body: GestureDetector(
+        onTap: _handleDevTap,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.blue.shade800, Colors.blue.shade100],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Card(
-                elevation: 8,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset('assets/lock.png', width: 80, height: 80),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Iniciar Sesión',
-                          style: Theme.of(context).textTheme.headlineMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue.shade900,
-                              ),
-                        ),
-                        const SizedBox(height: 32),
-                        TextFormField(
-                          controller: _usernameController,
-                          decoration: InputDecoration(
-                            labelText: 'Usuario',
-                            hintText: 'Ingresa tu usuario',
-                            prefixIcon: const Icon(Icons.person_outline),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Colors.blue,
-                                width: 2.0,
-                              ),
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey.shade50,
+          child: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Card(
+                  elevation: 8,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Image.asset('assets/lock.png', width: 80, height: 80),
+                          const SizedBox(height: 24),
+                          Text(
+                            'Iniciar Sesión',
+                            style: Theme.of(context).textTheme.headlineMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue.shade900,
+                                ),
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor ingresa tu usuario';
-                            }
-                            if (value.length < 3) {
-                              return 'El usuario debe tener al menos 3 caracteres';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          decoration: InputDecoration(
-                            labelText: 'Contraseña',
-                            hintText: 'Ingresa tu contraseña',
-                            prefixIcon: const Icon(Icons.lock_outline),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Colors.blue,
-                                width: 2.0,
-                              ),
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey.shade50,
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor ingresa tu contraseña';
-                            }
-                            if (value.length < 6) {
-                              return 'La contraseña debe tener al menos 6 caracteres';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 32),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _handleLogin,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue.shade700,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
+                          const SizedBox(height: 32),
+                          TextFormField(
+                            controller: _usernameController,
+                            decoration: InputDecoration(
+                              labelText: 'Usuario',
+                              hintText: 'Ingresa tu usuario',
+                              prefixIcon: const Icon(Icons.person_outline),
+                              border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              elevation: 2,
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Colors.blue,
+                                  width: 2.0,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
                             ),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Por favor ingresa tu usuario';
+                              }
+                              if (value.length < 3) {
+                                return 'El usuario debe tener al menos 3 caracteres';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _passwordController,
+                            obscureText: _obscurePassword,
+                            decoration: InputDecoration(
+                              labelText: 'Contraseña',
+                              hintText: 'Ingresa tu contraseña',
+                              prefixIcon: const Icon(Icons.lock_outline),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Colors.blue,
+                                  width: 2.0,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Por favor ingresa tu contraseña';
+                              }
+                              if (value.length < 6) {
+                                return 'La contraseña debe tener al menos 6 caracteres';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 32),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _handleLogin,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue.shade700,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 2,
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Iniciar Sesión',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                  )
-                                : const Text(
-                                    'Iniciar Sesión',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Botón de desarrollo oculto - se activa al presionar 5 veces
+                          if (_showDevButton)
+                            SizedBox(
+                              width: double.infinity,
+                              height: 50,
+                              child: OutlinedButton(
+                                onPressed: _skipLogin,
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.orange,
+                                  side: const BorderSide(color: Colors.orange),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // 🔧 Botón de desarrollo para saltarse el login
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: OutlinedButton(
-                            onPressed: () {
-                              if (widget.onLogin != null) {
-                                widget.onLogin!('Usuario Demo', 1);
-                              }
-                            },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.blue.shade700,
-                              side: BorderSide(color: Colors.blue.shade700),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Text(
+                                  '⚡ Omitir Login (Modo Dev)',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ),
                             ),
-                            child: Text(
-                              '🔧 Modo Desarrollo (Saltar Login)',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.blue.shade700,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

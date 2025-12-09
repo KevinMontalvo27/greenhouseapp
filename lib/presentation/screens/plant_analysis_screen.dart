@@ -91,10 +91,7 @@ class _PlantAnalysisScreenState extends State<PlantAnalysisScreen> {
               const SizedBox(height: 20),
               const Text(
                 'Seleccionar imagen',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
               ListTile(
@@ -104,10 +101,7 @@ class _PlantAnalysisScreenState extends State<PlantAnalysisScreen> {
                     color: Colors.blue.shade50,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(
-                    Icons.camera_alt,
-                    color: Colors.blue.shade700,
-                  ),
+                  child: Icon(Icons.camera_alt, color: Colors.blue.shade700),
                 ),
                 title: const Text('Tomar foto'),
                 subtitle: const Text('Usar la cámara del dispositivo'),
@@ -215,22 +209,18 @@ class _PlantAnalysisScreenState extends State<PlantAnalysisScreen> {
         child: Stack(
           children: [
             // Capa 1: Encabezado fijo con título
-            Positioned(
+            const Positioned(
               top: 0,
               left: 0,
               right: 0,
               height: 100,
               child: Padding(
-                padding: const EdgeInsets.only(
-                  left: 24.0,
-                  right: 24.0,
-                  top: 16.0,
-                ),
+                padding: EdgeInsets.only(left: 24.0, right: 24.0, top: 16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       'Análisis de Plantas',
                       style: TextStyle(
                         fontSize: 28,
@@ -238,8 +228,8 @@ class _PlantAnalysisScreenState extends State<PlantAnalysisScreen> {
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    const Text(
+                    SizedBox(height: 6),
+                    Text(
                       'Detecta enfermedades en tus plantas',
                       style: TextStyle(fontSize: 14, color: Colors.white70),
                     ),
@@ -251,7 +241,7 @@ class _PlantAnalysisScreenState extends State<PlantAnalysisScreen> {
             CustomScrollView(
               controller: _scrollController,
               slivers: [
-                SliverToBoxAdapter(child: SizedBox(height: 100)),
+                const SliverToBoxAdapter(child: SizedBox(height: 100)),
                 SliverToBoxAdapter(
                   child: Container(
                     decoration: BoxDecoration(
@@ -297,7 +287,7 @@ class _PlantAnalysisScreenState extends State<PlantAnalysisScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -309,13 +299,10 @@ class _PlantAnalysisScreenState extends State<PlantAnalysisScreen> {
             ? Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.file(
-                    _selectedImage!,
-                    fit: BoxFit.cover,
-                  ),
+                  Image.file(_selectedImage!, fit: BoxFit.cover),
                   if (_isAnalyzing)
                     Container(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       child: const Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -458,7 +445,6 @@ class _PlantAnalysisScreenState extends State<PlantAnalysisScreen> {
     final predictions = _analysisResult!['predictions'] as List;
     final topPrediction = predictions.first;
     final label = topPrediction['label'] as String;
-    final score = topPrediction['score'] as double;
     final isHealthy = label.toLowerCase().contains('healthy');
 
     return Container(
@@ -468,7 +454,7 @@ class _PlantAnalysisScreenState extends State<PlantAnalysisScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -487,7 +473,9 @@ class _PlantAnalysisScreenState extends State<PlantAnalysisScreen> {
                 ),
                 child: Icon(
                   isHealthy ? Icons.check_circle : Icons.warning,
-                  color: isHealthy ? Colors.green.shade700 : Colors.red.shade700,
+                  color: isHealthy
+                      ? Colors.green.shade700
+                      : Colors.red.shade700,
                   size: 30,
                 ),
               ),
@@ -498,10 +486,7 @@ class _PlantAnalysisScreenState extends State<PlantAnalysisScreen> {
                   children: [
                     const Text(
                       'Resultado del Análisis',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
                     ),
                     Text(
                       isHealthy ? 'Planta Saludable' : 'Problema Detectado',
@@ -523,10 +508,7 @@ class _PlantAnalysisScreenState extends State<PlantAnalysisScreen> {
           const SizedBox(height: 12),
           const Text(
             'Predicciones:',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           ...predictions.map((pred) {
@@ -587,9 +569,11 @@ class _PlantAnalysisScreenState extends State<PlantAnalysisScreen> {
         .replaceAll('___', ' - ')
         .replaceAll('_', ' ')
         .split(' ')
-        .map((word) => word.isNotEmpty
-            ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}'
-            : '')
+        .map(
+          (word) => word.isNotEmpty
+              ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}'
+              : '',
+        )
         .join(' ');
   }
 }
