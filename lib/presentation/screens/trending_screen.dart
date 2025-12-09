@@ -25,18 +25,18 @@ class _TrendingScreenState extends State<TrendingScreen> {
   List<Map<String, dynamic>> _trendingData = [];
 
   // Configuración de plantas para análisis de salud
+  // NOTA: Esta lista debe ser poblada con datos reales del backend
+  // Ejemplo de integración:
+  // 1. Crear un método en ApiService para obtener la lista de plantas
+  // 2. Llamar ese método en _loadPlantData() y actualizar _plants
+  // 3. El formato esperado es: List<String> con nombres de plantas
   final List<String> _plants = ['Uva', 'Tomate', 'Maíz', 'Papa'];
   String _selectedPlant = 'Uva';
-
-  // Datos de salud de plantas (simulados)
-  // Mapea cada planta a su historial de salud por día
-  late Map<String, List<Map<String, dynamic>>> _plantHealthData;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _generatePlantHealthData();
     // Muestra datos por defecto inmediatamente
     _trendingData = _getDefaultTrendingData();
     // Carga datos reales del historial en segundo plano
@@ -157,24 +157,6 @@ class _TrendingScreenState extends State<TrendingScreen> {
     return trends;
   }
 
-  /// Genera datos simulados de salud de plantas por día
-  ///
-  /// Crea un historial de salud (porcentaje) para cada planta
-  /// durante los 7 días de la semana con valores aleatorios.
-  void _generatePlantHealthData() {
-    final random = Random();
-    _plantHealthData = {
-      for (var plant in _plants)
-        plant: List.generate(
-          7,
-          (index) => {
-            'day': ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sab', 'Dom'][index],
-            'health': 70.0 + random.nextInt(30) + random.nextDouble(),
-          },
-        ),
-    };
-  }
-
   @override
   void dispose() {
     _scrollController.dispose();
@@ -268,6 +250,10 @@ class _TrendingScreenState extends State<TrendingScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Selector de plantas para análisis de salud
+                            _sectionTitle('Salud de las plantas'),
+                            _buildPlantHealthSection(),
+                            const SizedBox(height: 32),
                             // Gráfica de barras: Temperatura promedio por día
                             _sectionTitle('Temperatura (°C)'),
                             _buildBarChart(
@@ -291,14 +277,6 @@ class _TrendingScreenState extends State<TrendingScreen> {
                               'light',
                               Colors.amber,
                             ),
-                            const SizedBox(height: 32),
-                            // Gráfica de líneas: Comparación temperatura vs humedad
-                            _sectionTitle('Tendencia del clima'),
-                            _buildClimateLineChart(_trendingData),
-                            const SizedBox(height: 32),
-                            // Selector de plantas y gráfica de salud (simulado)
-                            _sectionTitle('Salud de las plantas'),
-                            _buildPlantHealthSection(),
                             const SizedBox(height: 40),
                           ],
                         ),
@@ -363,17 +341,35 @@ class _TrendingScreenState extends State<TrendingScreen> {
     );
   }
 
-  /// Construye una gráfica de líneas para comparar temperatura y humedad
+  /// Construye la sección de salud de plantas
   ///
-  /// Dibuja dos líneas superpuestas: una roja para temperatura y una azul
-  /// para humedad, permitiendo ver la correlación entre ambas variables.
+  /// Muestra un selector dropdown para elegir entre diferentes plantas.
   ///
-  /// Parámetros:
-  ///   - data: Lista de mapas con datos de temperatura y humedad por día
-  Widget _buildClimateLineChart(List<Map<String, dynamic>> data) {
+  /// INTEGRACIÓN CON BACKEND:
+  /// Para conectar con datos reales del backend:
+  /// 1. Crear un método en ApiService:
+  ///    static Future<List<String>> getPlantsList() async {
+  ///      final response = await http.get(Uri.parse('$baseUrl/plants'));
+  ///      // Procesar y retornar lista de nombres de plantas
+  ///    }
+  ///
+  /// 2. Crear un método de carga en este widget:
+  ///    Future<void> _loadPlantData() async {
+  ///      final plantsList = await ApiService.getPlantsList();
+  ///      if (mounted) {
+  ///        setState(() {
+  ///          _plants = plantsList;
+  ///          if (_plants.isNotEmpty) _selectedPlant = _plants[0];
+  ///        });
+  ///      }
+  ///    }
+  ///
+  /// 3. Llamar _loadPlantData() en initState()
+  ///
+  /// NOTA: Actualmente usa datos de ejemplo, reemplazar con datos del backend
+  Widget _buildPlantHealthSection() {
     return Container(
-      height: 200,
-      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -386,69 +382,27 @@ class _TrendingScreenState extends State<TrendingScreen> {
           ),
         ],
       ),
-      padding: const EdgeInsets.all(16),
-      child: CustomPaint(painter: ClimateLineChartPainter(data)),
-    );
-  }
-
-  /// Construye la sección de salud de plantas
-  ///
-  /// Muestra un selector dropdown para elegir entre diferentes plantas
-  /// y una gráfica de líneas con el índice de salud de la planta seleccionada
-  /// durante los últimos 7 días.
-  ///
-  /// NOTA: Esta sección usa datos simulados, no del backend
-  Widget _buildPlantHealthSection() {
-    final plantData = _plantHealthData[_selectedPlant]!;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Dropdown para seleccionar tipo de planta
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withValues(alpha: 0.2),
-                spreadRadius: 2,
-                blurRadius: 5,
-                offset: const Offset(0, 3),
+      child: DropdownButton<String>(
+        value: _selectedPlant,
+        isExpanded: true,
+        underline: const SizedBox(),
+        icon: const Icon(Icons.arrow_drop_down, color: Colors.green),
+        items: _plants
+            .map(
+              (p) => DropdownMenuItem(
+                value: p,
+                child: Row(
+                  children: [
+                    const Icon(Icons.eco, color: Colors.green, size: 20),
+                    const SizedBox(width: 8),
+                    Text(p, style: const TextStyle(fontSize: 16)),
+                  ],
+                ),
               ),
-            ],
-          ),
-          child: DropdownButton<String>(
-            value: _selectedPlant,
-            isExpanded: true,
-            underline: const SizedBox(),
-            items: _plants
-                .map((p) => DropdownMenuItem(value: p, child: Text(p)))
-                .toList(),
-            onChanged: (value) => setState(() => _selectedPlant = value!),
-          ),
-        ),
-        const SizedBox(height: 16),
-        // Gráfica de salud de la planta seleccionada
-        Container(
-          height: 200,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withValues(alpha: 0.2),
-                spreadRadius: 2,
-                blurRadius: 5,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(16),
-          child: CustomPaint(painter: PlantHealthChartPainter(plantData)),
-        ),
-      ],
+            )
+            .toList(),
+        onChanged: (value) => setState(() => _selectedPlant = value!),
+      ),
     );
   }
 }
@@ -531,142 +485,6 @@ class BarChartPainter extends CustomPainter {
         Offset(x + barWidth / 2 - textPainter.width / 2, size.height - 20),
       );
     }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-/// Painter para gráfica de líneas dobles (temperatura y humedad)
-///
-/// Dibuja dos líneas superpuestas para comparar la evolución de
-/// temperatura (línea roja) y humedad (línea azul) a lo largo de la semana.
-///
-/// Características:
-/// - Normaliza cada variable independientemente para mejor visualización
-/// - Maneja casos donde no hay variación en los datos
-/// - Usa colores diferenciados para distinguir las variables
-class ClimateLineChartPainter extends CustomPainter {
-  final List<Map<String, dynamic>> data;
-
-  ClimateLineChartPainter(this.data);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Pincel para línea de temperatura (rojo)
-    final tempPaint = Paint()
-      ..color = Colors.red
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-
-    // Pincel para línea de humedad (azul)
-    final humPaint = Paint()
-      ..color = Colors.blue
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-
-    // Extrae valores de temperatura y humedad
-    final tempValues = data
-        .map((e) => (e['temperature'] as num).toDouble())
-        .toList();
-    final humValues = data
-        .map((e) => (e['humidity'] as num).toDouble())
-        .toList();
-
-    // Calcula rangos para normalización independiente
-    final tMin = tempValues.reduce(min);
-    final tMax = tempValues.reduce(max);
-    final hMin = humValues.reduce(min);
-    final hMax = humValues.reduce(max);
-
-    final tRange = tMax - tMin;
-    final hRange = hMax - hMin;
-
-    // Espaciado horizontal entre puntos
-    final spacing = size.width / (data.length - 1);
-    final tempPath = Path();
-    final humPath = Path();
-
-    // Construye los paths para ambas líneas
-    for (int i = 0; i < data.length; i++) {
-      final t = (data[i]['temperature'] as num).toDouble();
-      final h = (data[i]['humidity'] as num).toDouble();
-      final x = i * spacing;
-
-      // Normaliza posiciones Y (invierte porque el eje Y crece hacia abajo)
-      final yT = tRange > 0
-          ? size.height - ((t - tMin) / tRange) * size.height * 0.8
-          : size.height * 0.5;
-      final yH = hRange > 0
-          ? size.height - ((h - hMin) / hRange) * size.height * 0.8
-          : size.height * 0.5;
-
-      if (i == 0) {
-        tempPath.moveTo(x, yT);
-        humPath.moveTo(x, yH);
-      } else {
-        tempPath.lineTo(x, yT);
-        humPath.lineTo(x, yH);
-      }
-    }
-
-    // Dibuja ambas líneas
-    canvas.drawPath(tempPath, tempPaint);
-    canvas.drawPath(humPath, humPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-/// Painter para gráfica de salud de plantas
-///
-/// Dibuja una línea simple que muestra la evolución del índice de salud
-/// de la planta seleccionada durante la última semana.
-///
-/// NOTA: Esta gráfica usa datos simulados, no datos reales del backend
-class PlantHealthChartPainter extends CustomPainter {
-  final List<Map<String, dynamic>> data;
-
-  PlantHealthChartPainter(this.data);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Pincel para la línea de salud (verde)
-    final paint = Paint()
-      ..color = Colors.green
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke;
-
-    final path = Path();
-    final spacing = size.width / (data.length - 1);
-
-    // Extrae valores de salud y calcula rango
-    final healthValues = data
-        .map((e) => (e['health'] as num).toDouble())
-        .toList();
-    final minVal = healthValues.reduce(min);
-    final maxVal = healthValues.reduce(max);
-    final range = maxVal - minVal;
-
-    // Construye el path de la línea
-    for (int i = 0; i < data.length; i++) {
-      final h = (data[i]['health'] as num).toDouble();
-      final x = i * spacing;
-
-      // Normaliza la posición Y
-      final y = range > 0
-          ? size.height - ((h - minVal) / range) * size.height * 0.8
-          : size.height * 0.5;
-
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-
-    canvas.drawPath(path, paint);
   }
 
   @override
