@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:greenhouse/services/api_service.dart';
+import '../../services/login_service.dart';
+import 'greenhouse_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  final void Function(String username, int userId)? onLogin;
-  const LoginScreen({super.key, this.onLogin});
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  int _tapCount = 0;
+  bool _showBypassButton = false;
+  bool _databaseError = false;
 
   @override
   void dispose() {
@@ -23,55 +25,130 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() async {
-    if (_formKey.currentState!.validate()) {
+  void _handleScreenTap() {
+    setState(() {
+      _tapCount++;
+    });
+
+    if (_tapCount >= 5 && !_showBypassButton) {
       setState(() {
-        _isLoading = true;
+        _showBypassButton = true;
       });
+      _showInfo('🔓 Botón de omisión desbloqueado');
+    }
+  }
 
-      try {
-        final result = await ApiService.login(
-          _usernameController.text,
-          _passwordController.text,
+  void _handleBypassLogin() {
+    print('🔓 Omitiendo login...');
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const GreenhouseScreen()),
+    );
+  }
+
+  Future<void> _handleLogin() async {
+    // Validar campos
+    if (_usernameController.text.trim().isEmpty) {
+      _showError('Por favor ingresa tu usuario');
+      return;
+    }
+
+    if (_passwordController.text.isEmpty) {
+      _showError('Por favor ingresa tu contraseña');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      print('🔄 Iniciando login...');
+
+      final result = await LoginService.login(
+        _usernameController.text.trim(),
+        _passwordController.text,
+      );
+
+      if (!mounted) return;
+
+      // Verificar si es un error de conexión a BD
+      if (result['message']?.contains('connection') ??
+          false || result['message']?.contains('database') ??
+          false) {
+        setState(() {
+          _databaseError = true;
+        });
+        _showWarning(
+          '⚠️ Error de base de datos - Algunos datos pueden no cargarse',
         );
+        print('⚠️ Error de BD detectado: ${result['message']}');
+        // Permitir continuar a pesar del error
+      }
 
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
+      if (result['success']) {
+        print('✅ Login exitoso');
 
-          if (result['success']) {
-            final data = result['data'];
-            if (widget.onLogin != null) {
-              widget.onLogin!(data['username'], data['user_id']);
-            }
-          } else {
-            _showErrorDialog(result['message'] ?? 'Error al iniciar sesión');
-          }
-        }
-      } catch (e) {
+        // Navegar a la pantalla de selección de invernaderos
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const GreenhouseScreen()),
+        );
+      } else {
+        _showError(result['message'] ?? 'Error al iniciar sesión');
+      }
+    } catch (e) {
+      print('❌ Error en login: $e');
+
+      // Detectar si es un error de base de datos
+      String errorMsg = e.toString().toLowerCase();
+      if (errorMsg.contains('connection') ||
+          errorMsg.contains('database') ||
+          errorMsg.contains('server')) {
+        setState(() {
+          _databaseError = true;
+        });
+        _showWarning(
+          '⚠️ No se pudo conectar a la base de datos - La app continuará en modo limitado',
+        );
+        print('⚠️ Error de base de datos: $e');
+        // Permitir continuar a pesar del error
+      } else {
         if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-          _showErrorDialog('Error de conexión: ${e.toString()}');
+          _showError('Error de conexión. Verifica tu red.');
         }
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
 
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Error'),
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
         content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showInfo(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.blue,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showWarning(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.orange,
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -79,178 +156,186 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.blue.shade800, Colors.blue.shade100],
+      body: GestureDetector(
+        onTap: _handleScreenTap,
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6), Color(0xFF60A5FA)],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Card(
-                elevation: 8,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset('assets/lock.png', width: 80, height: 80),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Iniciar Sesión',
-                          style: Theme.of(context).textTheme.headlineMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue.shade900,
-                              ),
-                        ),
-                        const SizedBox(height: 32),
-                        TextFormField(
-                          controller: _usernameController,
-                          decoration: InputDecoration(
-                            labelText: 'Usuario',
-                            hintText: 'Ingresa tu usuario',
-                            prefixIcon: const Icon(Icons.person_outline),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Colors.blue,
-                                width: 2.0,
-                              ),
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey.shade50,
+          child: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Logo o icono
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.agriculture, // Icono de agricultura
+                        size: 80,
+                        color: Colors.white,
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    const Text(
+                      'Greenhouse App',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    const Text(
+                      'Monitoreo inteligente de invernaderos',
+                      style: TextStyle(fontSize: 16, color: Colors.white70),
+                    ),
+
+                    const SizedBox(height: 48),
+
+                    // Formulario
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor ingresa tu usuario';
-                            }
-                            if (value.length < 3) {
-                              return 'El usuario debe tener al menos 3 caracteres';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          decoration: InputDecoration(
-                            labelText: 'Contraseña',
-                            hintText: 'Ingresa tu contraseña',
-                            prefixIcon: const Icon(Icons.lock_outline),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Colors.blue,
-                                width: 2.0,
-                              ),
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey.shade50,
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Por favor ingresa tu contraseña';
-                            }
-                            if (value.length < 6) {
-                              return 'La contraseña debe tener al menos 6 caracteres';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 32),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _handleLogin,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue.shade700,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          // Campo de usuario
+                          TextField(
+                            controller: _usernameController,
+                            decoration: InputDecoration(
+                              labelText: 'Usuario',
+                              prefixIcon: const Icon(Icons.person),
+                              border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              elevation: 2,
+                              filled: true,
+                              fillColor: Colors.grey[50],
                             ),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
+                            enabled: !_isLoading,
+                            textInputAction: TextInputAction.next,
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Campo de contraseña
+                          TextField(
+                            controller: _passwordController,
+                            obscureText: _obscurePassword,
+                            decoration: InputDecoration(
+                              labelText: 'Contraseña',
+                              prefixIcon: const Icon(Icons.lock),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey[50],
+                            ),
+                            enabled: !_isLoading,
+                            textInputAction: TextInputAction.done,
+                            onSubmitted: (_) => _handleLogin(),
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Botón de login
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _handleLogin,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF3B82F6),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Iniciar Sesión',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
                                       ),
                                     ),
-                                  )
-                                : const Text(
-                                    'Iniciar Sesión',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                            ),
+                          ),
+
+                          // Botón de omisión (solo si está desbloqueado)
+                          if (_showBypassButton) ...[
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 50,
+                              child: ElevatedButton(
+                                onPressed: _isLoading
+                                    ? null
+                                    : _handleBypassLogin,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF10B981),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // 🔧 Botón de desarrollo para saltarse el login
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: OutlinedButton(
-                            onPressed: () {
-                              if (widget.onLogin != null) {
-                                widget.onLogin!('Usuario Demo', 1);
-                              }
-                            },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.blue.shade700,
-                              side: BorderSide(color: Colors.blue.shade700),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Text(
+                                  '🔓 Omitir Login',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
                               ),
                             ),
-                            child: Text(
-                              '🔧 Modo Desarrollo (Saltar Login)',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.blue.shade700,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                          ],
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import './widgets/sensor_card.dart';
 import '../gemini_screen.dart';
 import '../plant_analysis_screen.dart';
+import '../../../services/sensor_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   final String username;
@@ -20,56 +21,127 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   late ScrollController _scrollController;
 
-  // Datos simulados de sensores
-  final List<Map<String, dynamic>> _sensorsData = [
-    {
-      'name': 'Temperatura',
-      'reading': '24.5°C',
-      'date': DateTime.now().subtract(const Duration(minutes: 5)),
-      'icon': Icons.thermostat,
-      'color': Colors.orange,
-    },
-    {
-      'name': 'Humedad',
-      'reading': '65%',
-      'date': DateTime.now().subtract(const Duration(minutes: 3)),
-      'icon': Icons.water_drop,
-      'color': Colors.blue,
-    },
-    {
-      'name': 'Presión',
-      'reading': '1013 hPa',
-      'date': DateTime.now().subtract(const Duration(minutes: 8)),
-      'icon': Icons.speed,
-      'color': Colors.purple,
-    },
-    {
-      'name': 'Luz',
-      'reading': '850 lux',
-      'date': DateTime.now().subtract(const Duration(minutes: 2)),
-      'icon': Icons.light_mode,
-      'color': Colors.amber,
-    },
-    {
-      'name': 'CO2',
-      'reading': '420 ppm',
-      'date': DateTime.now().subtract(const Duration(minutes: 10)),
-      'icon': Icons.air,
-      'color': Colors.green,
-    },
-    {
-      'name': 'Sonido',
-      'reading': '45 dB',
-      'date': DateTime.now().subtract(const Duration(minutes: 1)),
-      'icon': Icons.volume_up,
-      'color': Colors.teal,
-    },
-  ];
+  // Estado de carga de datos del sensor
+  bool _isLoading = false;
+
+  // ID del sensor a consultar (ajustar según tu configuración)
+  static const int sensorId = 1;
+
+  // Datos de los sensores que se mostrarán en las tarjetas
+  // Inicializados con valores por defecto y se actualizan con datos reales
+  List<Map<String, dynamic>> _sensorsData = [];
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+    // Muestra datos por defecto inmediatamente
+    _sensorsData = _getDefaultSensorsData();
+    // Carga datos reales del sensor en segundo plano
+    _loadSensorData();
+  }
+
+  /// Obtiene la lectura más reciente del sensor desde el backend
+  ///
+  /// Actualiza el estado con los datos reales de temperatura, humedad y luz.
+  /// Si no hay conexión, mantiene los valores por defecto.
+  /// Verifica que el widget esté montado antes de llamar setState.
+  Future<void> _loadSensorData() async {
+    if (!mounted) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // Obtiene la última lectura del sensor
+      final readings = await SensorService.getSensorReadings(
+        sensorId,
+        limit: 1,
+      );
+
+      // Verifica que el widget aún esté montado antes de actualizar el estado
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        if (readings.isNotEmpty) {
+          // Actualiza las tarjetas con los datos reales del backend
+          _sensorsData = _buildSensorsData(readings.first);
+        } else {
+          // Si no hay datos, usa valores por defecto
+          _sensorsData = _getDefaultSensorsData();
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _sensorsData = _getDefaultSensorsData();
+        });
+      }
+    }
+  }
+
+  /// Genera datos de sensores por defecto cuando no hay conexión
+  ///
+  /// Retorna:
+  ///   - Lista de mapas con valores simulados para temperatura, humedad y luz
+  List<Map<String, dynamic>> _getDefaultSensorsData() {
+    return [
+      {
+        'name': 'Temperatura',
+        'reading': '24.5°C',
+        'date': DateTime.now().subtract(const Duration(minutes: 5)),
+        'icon': Icons.thermostat,
+        'color': Colors.orange,
+      },
+      {
+        'name': 'Humedad',
+        'reading': '65%',
+        'date': DateTime.now().subtract(const Duration(minutes: 3)),
+        'icon': Icons.water_drop,
+        'color': Colors.blue,
+      },
+      {
+        'name': 'Luz',
+        'reading': '850 lux',
+        'date': DateTime.now().subtract(const Duration(minutes: 2)),
+        'icon': Icons.light_mode,
+        'color': Colors.amber,
+      },
+    ];
+  }
+
+  /// Construye la lista de datos para las tarjetas del dashboard
+  ///
+  /// Parámetros:
+  ///   - reading: Lectura del sensor con los datos actuales
+  ///
+  /// Retorna:
+  ///   - Lista de mapas con la información de cada sensor para mostrar
+  List<Map<String, dynamic>> _buildSensorsData(Map<String, dynamic> reading) {
+    return [
+      {
+        'name': 'Temperatura',
+        'reading': '${(reading["temperature"] as num).toStringAsFixed(1)}°C',
+        'date': DateTime.parse(reading['timestamp'] as String),
+        'icon': Icons.thermostat,
+        'color': Colors.orange,
+      },
+      {
+        'name': 'Humedad',
+        'reading': '${(reading["humidity"] as num).toStringAsFixed(1)}%',
+        'date': DateTime.parse(reading['timestamp'] as String),
+        'icon': Icons.water_drop,
+        'color': Colors.blue,
+      },
+      {
+        'name': 'Luz',
+        'reading': '${(reading["light"] as num).toStringAsFixed(0)} lux',
+        'date': DateTime.parse(reading['timestamp'] as String),
+        'icon': Icons.light_mode,
+        'color': Colors.amber,
+      },
+    ];
   }
 
   @override
@@ -116,9 +188,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    'Monitoreo de sensores en tiempo real',
-                    style: TextStyle(fontSize: 14, color: Colors.white70),
+                  Row(
+                    children: [
+                      const Text(
+                        'Monitoreo de sensores en tiempo real',
+                        style: TextStyle(fontSize: 14, color: Colors.white70),
+                      ),
+                      const SizedBox(width: 8),
+                      // Indicador visual del estado de carga
+                      if (_isLoading)
+                        const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white70,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ],
               ),
@@ -128,7 +217,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           CustomScrollView(
             controller: _scrollController,
             slivers: [
-              SliverToBoxAdapter(child: SizedBox(height: 100)),
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
               SliverToBoxAdapter(
                 child: Container(
                   decoration: BoxDecoration(
@@ -138,28 +227,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       topRight: Radius.circular(30),
                     ),
                   ),
-                  child: GridView.builder(
-                    padding: const EdgeInsets.all(20.0),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 2,
-                          mainAxisSpacing: 10,
-                          childAspectRatio: 0.85,
-                        ),
-                    itemCount: _sensorsData.length,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemBuilder: (context, index) {
-                      final sensor = _sensorsData[index];
-                      return SensorCard(
-                        sensorName: sensor['name'],
-                        reading: sensor['reading'],
-                        readingDate: sensor['date'],
-                        icon: sensor['icon'],
-                        color: sensor['color'],
-                      );
-                    },
+                  child: RefreshIndicator(
+                    // Permite actualizar los datos deslizando hacia abajo
+                    onRefresh: _loadSensorData,
+                    child: GridView.builder(
+                      padding: const EdgeInsets.all(20.0),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 2,
+                            mainAxisSpacing: 10,
+                            childAspectRatio: 0.85,
+                          ),
+                      itemCount: _sensorsData.length,
+                      shrinkWrap: true,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemBuilder: (context, index) {
+                        final sensor = _sensorsData[index];
+                        return SensorCard(
+                          sensorName: sensor['name'],
+                          reading: sensor['reading'],
+                          readingDate: sensor['date'],
+                          icon: sensor['icon'],
+                          color: sensor['color'],
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),

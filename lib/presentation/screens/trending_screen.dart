@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import '../../services/sensor_service.dart';
 
 class TrendingScreen extends StatefulWidget {
   const TrendingScreen({super.key});
@@ -11,39 +12,163 @@ class TrendingScreen extends StatefulWidget {
 class _TrendingScreenState extends State<TrendingScreen> {
   late ScrollController _scrollController;
 
-  final List<Map<String, dynamic>> _trendingData = [
-    {'day': 'Lun', 'temperature': 22.5, 'humidity': 60.0, 'light': 800.0},
-    {'day': 'Mar', 'temperature': 23.1, 'humidity': 62.0, 'light': 820.0},
-    {'day': 'Mié', 'temperature': 24.5, 'humidity': 65.0, 'light': 850.0},
-    {'day': 'Jue', 'temperature': 23.8, 'humidity': 63.0, 'light': 830.0},
-    {'day': 'Vie', 'temperature': 25.2, 'humidity': 67.0, 'light': 870.0},
-    {'day': 'Sab', 'temperature': 24.0, 'humidity': 64.0, 'light': 840.0},
-    {'day': 'Dom', 'temperature': 23.5, 'humidity': 61.0, 'light': 810.0},
-  ];
+  // Estado de carga de datos desde el backend
+  bool _isLoading = false;
+
+  // ID del sensor a consultar (ajustar según tu configuración)
+  static const int sensorId = 1;
+
+  // Datos de tendencias obtenidos del backend
+  // Cada entrada representa un día con temperatura, humedad y luz
+  // Inicializados con valores por defecto
+  List<Map<String, dynamic>> _trendingData = [];
 
   final List<String> _plants = ['Uva', 'Tomate', 'Maíz', 'Papa'];
   String _selectedPlant = 'Uva';
-  late Map<String, List<Map<String, dynamic>>> _plantHealthData;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    _generatePlantHealthData();
+    // Muestra datos por defecto inmediatamente
+    _trendingData = _getDefaultTrendingData();
+    // Carga datos reales del historial en segundo plano
+    _loadTrendingData();
   }
 
-  void _generatePlantHealthData() {
-    final random = Random();
-    _plantHealthData = {
-      for (var plant in _plants)
-        plant: List.generate(
-          7,
-          (index) => {
-            'day': ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sab', 'Dom'][index],
-            'health': 70.0 + random.nextInt(30) + random.nextDouble(),
-          },
-        ),
-    };
+  /// Obtiene el historial de lecturas del sensor desde el backend
+  ///
+  /// Procesa las lecturas para agruparlas por día de la semana
+  /// y calcular promedios diarios de temperatura, humedad y luz.
+  /// Si no hay datos, mantiene los valores por defecto.
+  /// Verifica que el widget esté montado antes de llamar setState.
+  Future<void> _loadTrendingData() async {
+    if (!mounted) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // Obtiene las últimas 168 lecturas (7 días si se toma 1 lectura por hora)
+      final readings = await SensorService.getSensorReadings(
+        sensorId,
+        limit: 168,
+      );
+
+      // Verifica que el widget aún esté montado antes de actualizar el estado
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+
+        if (readings.isEmpty) {
+          // Si no hay datos del backend, mantiene valores por defecto
+          _trendingData = _getDefaultTrendingData();
+        } else {
+          // Procesa las lecturas para generar datos de tendencias
+          _trendingData = _processReadingsIntoTrends(readings);
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _trendingData = _getDefaultTrendingData();
+        });
+      }
+    }
+  }
+
+  /// Genera datos de tendencias por defecto cuando no hay conexión
+  ///
+  /// Retorna:
+  ///   - Lista de 7 días con valores simulados para temperatura, humedad y luz
+  List<Map<String, dynamic>> _getDefaultTrendingData() {
+    return [
+      {'day': 'Lun', 'temperature': 22.5, 'humidity': 60.0, 'light': 800.0},
+      {'day': 'Mar', 'temperature': 23.1, 'humidity': 62.0, 'light': 820.0},
+      {'day': 'Mié', 'temperature': 24.5, 'humidity': 65.0, 'light': 850.0},
+      {'day': 'Jue', 'temperature': 23.8, 'humidity': 63.0, 'light': 830.0},
+      {'day': 'Vie', 'temperature': 25.2, 'humidity': 67.0, 'light': 870.0},
+      {'day': 'Sab', 'temperature': 24.0, 'humidity': 64.0, 'light': 840.0},
+      {'day': 'Dom', 'temperature': 23.5, 'humidity': 61.0, 'light': 810.0},
+    ];
+  }
+
+  /// Procesa las lecturas del sensor para crear datos de tendencias por día
+  ///
+  /// Agrupa las lecturas por día de la semana y calcula el promedio
+  /// de temperatura, humedad y luz para cada día.
+  ///
+  /// Parámetros:
+  ///   - readings: Lista de lecturas del sensor ordenadas por fecha
+  ///
+  /// Retorna:
+  ///   - Lista de mapas con promedios diarios de los últimos 7 días
+  List<Map<String, dynamic>> _processReadingsIntoTrends(
+    List<dynamic> readings,
+  ) {
+    if (readings.isEmpty) return _getDefaultTrendingData();
+
+    // Nombres de los días de la semana en español
+    final daysOfWeek = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sab', 'Dom'];
+
+    // Agrupa lecturas por día de la semana
+    final Map<int, List<Map<String, dynamic>>> readingsByDay = {};
+
+    for (var reading in readings) {
+      final readingMap = reading as Map<String, dynamic>;
+      final timestamp = DateTime.parse(readingMap['timestamp'] as String);
+
+      // weekday: 1 = Lunes, 7 = Domingo
+      final dayIndex = timestamp.weekday - 1;
+      readingsByDay.putIfAbsent(dayIndex, () => []);
+      readingsByDay[dayIndex]!.add(readingMap);
+    }
+
+    // Calcula promedios para cada día
+    final List<Map<String, dynamic>> trends = [];
+
+    for (int i = 0; i < 7; i++) {
+      final dayReadings = readingsByDay[i] ?? [];
+
+      if (dayReadings.isEmpty) {
+        // Si no hay datos para este día, usa valores por defecto
+        trends.add({
+          'day': daysOfWeek[i],
+          'temperature': 24.0,
+          'humidity': 65.0,
+          'light': 850.0,
+        });
+      } else {
+        // Calcula el promedio de las lecturas del día
+        final avgTemp =
+            dayReadings
+                .map((r) => (r['temperature'] as num).toDouble())
+                .reduce((a, b) => a + b) /
+            dayReadings.length;
+
+        final avgHumidity =
+            dayReadings
+                .map((r) => (r['humidity'] as num).toDouble())
+                .reduce((a, b) => a + b) /
+            dayReadings.length;
+
+        final avgLight =
+            dayReadings
+                .map((r) => (r['light'] as num).toDouble())
+                .reduce((a, b) => a + b) /
+            dayReadings.length;
+
+        trends.add({
+          'day': daysOfWeek[i],
+          'temperature': avgTemp,
+          'humidity': avgHumidity,
+          'light': avgLight,
+        });
+      }
+    }
+
+    return trends;
   }
 
   @override
@@ -92,62 +217,88 @@ class _TrendingScreenState extends State<TrendingScreen> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
-                      'Analiza el comportamiento de tus sensores',
-                      style: TextStyle(fontSize: 14, color: Colors.white70),
+                    Row(
+                      children: [
+                        const Text(
+                          'Analiza el comportamiento de tus sensores',
+                          style: TextStyle(fontSize: 14, color: Colors.white70),
+                        ),
+                        const SizedBox(width: 8),
+                        // Indicador visual mientras se cargan los datos
+                        if (_isLoading)
+                          const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white70,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ],
                 ),
               ),
             ),
             // Capa 2: Contenido desplazable que tapa la capa 1
-            CustomScrollView(
-              controller: _scrollController,
-              slivers: [
-                SliverToBoxAdapter(child: SizedBox(height: 100)),
-                SliverToBoxAdapter(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(30),
-                        topRight: Radius.circular(30),
+            RefreshIndicator(
+              onRefresh: _loadTrendingData,
+              child: CustomScrollView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                  SliverToBoxAdapter(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(30),
+                          topRight: Radius.circular(30),
+                        ),
                       ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _sectionTitle('Temperatura (°C)'),
-                          _buildBarChart(
-                            _trendingData,
-                            'temperature',
-                            Colors.orange,
-                          ),
-                          const SizedBox(height: 32),
-                          _sectionTitle('Humedad (%)'),
-                          _buildBarChart(
-                            _trendingData,
-                            'humidity',
-                            Colors.blue,
-                          ),
-                          const SizedBox(height: 32),
-                          _sectionTitle('Luz (lux)'),
-                          _buildBarChart(_trendingData, 'light', Colors.amber),
-                          const SizedBox(height: 32),
-                          _sectionTitle('Tendencia del clima'),
-                          _buildClimateLineChart(_trendingData),
-                          const SizedBox(height: 32),
-                          _sectionTitle('Salud de las plantas'),
-                          _buildPlantHealthSection(),
-                          const SizedBox(height: 40),
-                        ],
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Selector de plantas para análisis de salud
+                            _sectionTitle('Salud de las plantas'),
+                            _buildPlantHealthSection(),
+                            const SizedBox(height: 32),
+                            // Gráfica de barras: Temperatura promedio por día
+                            _sectionTitle('Temperatura (°C)'),
+                            _buildBarChart(
+                              _trendingData,
+                              'temperature',
+                              Colors.orange,
+                            ),
+                            const SizedBox(height: 32),
+                            // Gráfica de barras: Humedad promedio por día
+                            _sectionTitle('Humedad (%)'),
+                            _buildBarChart(
+                              _trendingData,
+                              'humidity',
+                              Colors.blue,
+                            ),
+                            const SizedBox(height: 32),
+                            // Gráfica de barras: Luz promedio por día
+                            _sectionTitle('Luz (lux)'),
+                            _buildBarChart(
+                              _trendingData,
+                              'light',
+                              Colors.amber,
+                            ),
+                            const SizedBox(height: 40),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -192,76 +343,51 @@ class _TrendingScreenState extends State<TrendingScreen> {
     );
   }
 
-  Widget _buildClimateLineChart(List<Map<String, dynamic>> data) {
+  /// Construye la sección de salud de plantas
+  ///
+  /// Muestra un selector dropdown para elegir entre diferentes plantas.
+  ///
+  /// INTEGRACIÓN CON BACKEND:
+  /// Para conectar con datos reales del backend:
+  /// 1. Crear un método en SensorService para obtener la lista de plantas
+  /// 2. Llamar ese método en _loadPlantData() y actualizar _plants
+  /// 3. El formato esperado es: List<String> con nombres de plantas
+  Widget _buildPlantHealthSection() {
     return Container(
-      height: 200,
-      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
+            color: Colors.grey.withValues(alpha: 0.2),
             spreadRadius: 2,
             blurRadius: 5,
             offset: const Offset(0, 3),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(16),
-      child: CustomPaint(painter: ClimateLineChartPainter(data)),
-    );
-  }
-
-  Widget _buildPlantHealthSection() {
-    final plantData = _plantHealthData[_selectedPlant]!;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.2),
-                spreadRadius: 2,
-                blurRadius: 5,
-                offset: const Offset(0, 3),
+      child: DropdownButton<String>(
+        value: _selectedPlant,
+        isExpanded: true,
+        underline: const SizedBox(),
+        icon: const Icon(Icons.arrow_drop_down, color: Colors.green),
+        items: _plants
+            .map(
+              (p) => DropdownMenuItem(
+                value: p,
+                child: Row(
+                  children: [
+                    const Icon(Icons.eco, color: Colors.green, size: 20),
+                    const SizedBox(width: 8),
+                    Text(p, style: const TextStyle(fontSize: 16)),
+                  ],
+                ),
               ),
-            ],
-          ),
-          child: DropdownButton<String>(
-            value: _selectedPlant,
-            isExpanded: true,
-            underline: const SizedBox(),
-            items: _plants
-                .map((p) => DropdownMenuItem(value: p, child: Text(p)))
-                .toList(),
-            onChanged: (value) => setState(() => _selectedPlant = value!),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          height: 200,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.2),
-                spreadRadius: 2,
-                blurRadius: 5,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(16),
-          child: CustomPaint(painter: PlantHealthChartPainter(plantData)),
-        ),
-      ],
+            )
+            .toList(),
+        onChanged: (value) => setState(() => _selectedPlant = value!),
+      ),
     );
   }
 }
@@ -319,113 +445,6 @@ class BarChartPainter extends CustomPainter {
         Offset(x + barWidth / 2 - textPainter.width / 2, size.height - 20),
       );
     }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class ClimateLineChartPainter extends CustomPainter {
-  final List<Map<String, dynamic>> data;
-
-  ClimateLineChartPainter(this.data);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final tempPaint = Paint()
-      ..color = Colors.red
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-
-    final humPaint = Paint()
-      ..color = Colors.blue
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-
-    final tempValues = data
-        .map((e) => (e['temperature'] as num).toDouble())
-        .toList();
-    final humValues = data
-        .map((e) => (e['humidity'] as num).toDouble())
-        .toList();
-
-    final tMin = tempValues.reduce(min);
-    final tMax = tempValues.reduce(max);
-    final hMin = humValues.reduce(min);
-    final hMax = humValues.reduce(max);
-
-    final tRange = tMax - tMin;
-    final hRange = hMax - hMin;
-
-    final spacing = size.width / (data.length - 1);
-    final tempPath = Path();
-    final humPath = Path();
-
-    for (int i = 0; i < data.length; i++) {
-      final t = (data[i]['temperature'] as num).toDouble();
-      final h = (data[i]['humidity'] as num).toDouble();
-      final x = i * spacing;
-      final yT = tRange > 0
-          ? size.height - ((t - tMin) / tRange) * size.height * 0.8
-          : size.height * 0.5;
-      final yH = hRange > 0
-          ? size.height - ((h - hMin) / hRange) * size.height * 0.8
-          : size.height * 0.5;
-
-      if (i == 0) {
-        tempPath.moveTo(x, yT);
-        humPath.moveTo(x, yH);
-      } else {
-        tempPath.lineTo(x, yT);
-        humPath.lineTo(x, yH);
-      }
-    }
-
-    canvas.drawPath(tempPath, tempPaint);
-    canvas.drawPath(humPath, humPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class PlantHealthChartPainter extends CustomPainter {
-  final List<Map<String, dynamic>> data;
-
-  PlantHealthChartPainter(this.data);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.green
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke;
-
-    final path = Path();
-    final spacing = size.width / (data.length - 1);
-
-    final healthValues = data
-        .map((e) => (e['health'] as num).toDouble())
-        .toList();
-    final minVal = healthValues.reduce(min);
-    final maxVal = healthValues.reduce(max);
-    final range = maxVal - minVal;
-
-    for (int i = 0; i < data.length; i++) {
-      final h = (data[i]['health'] as num).toDouble();
-      final x = i * spacing;
-      final y = range > 0
-          ? size.height - ((h - minVal) / range) * size.height * 0.8
-          : size.height * 0.5;
-
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-
-    canvas.drawPath(path, paint);
   }
 
   @override

@@ -3,42 +3,72 @@ import 'dashboard/dashboard_screen.dart';
 import 'trending_screen.dart';
 import 'map_screen.dart';
 import 'widgets/custom_bottom_bar.dart';
+import '../../services/auth_service.dart';
+import '../../services/login_service.dart';
 
 class MainScreen extends StatefulWidget {
-  final String username;
-  final int userId;
-  final VoidCallback? onLogout;
-  
-  const MainScreen({
-    super.key,
-    required this.username,
-    required this.userId,
-    this.onLogout,
-  });
+  const MainScreen({super.key});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> {
+  final AuthService _authService = AuthService();
   int _selectedIndex = 1;
+  String username = 'Usuario';
+  int userId = 0;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final user = await _authService.getUsername();
+    final id = await _authService.getUserId();
+    
+    setState(() {
+      username = user ?? 'Usuario';
+      userId = id ?? 0;
+      isLoading = false;
+    });
+  }
 
   Widget _getBody() {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     switch (_selectedIndex) {
       case 0:
         return const TrendingScreen();
       case 1:
         return DashboardScreen(
-          username: widget.username,
-          userId: widget.userId,
+          username: username,
+          userId: userId,
         );
       case 2:
         return const MapScreen();
       default:
         return DashboardScreen(
-          username: widget.username,
-          userId: widget.userId,
+          username: username,
+          userId: userId,
         );
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    await LoginService.logout();
+    
+    if (mounted) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/login',
+        (route) => false,
+      );
     }
   }
 
@@ -77,9 +107,7 @@ class _MainScreenState extends State<MainScreen> {
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        if (widget.onLogout != null) {
-                          widget.onLogout!();
-                        }
+                        _handleLogout();
                       },
                       child: const Text('Cerrar sesión'),
                     ),
