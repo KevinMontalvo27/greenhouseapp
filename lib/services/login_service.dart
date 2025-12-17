@@ -13,8 +13,8 @@ class LoginService {
   /// Login - Autentica al usuario y guarda la sesión automáticamente
   static Future<Map<String, dynamic>> login(String username, String password) async {
     try {
-      print('🔄 Intentando login con: $username');
-      print('📡 URL: $baseUrl/users/login');
+      print('Intentando login con: $username');
+      print('URL: $baseUrl/users/login');
       
       final response = await http.post(
         Uri.parse('$baseUrl/users/login'),
@@ -30,13 +30,13 @@ class LoginService {
         },
       );
 
-      print('📥 Status code: ${response.statusCode}');
-      print('📥 Response body: ${response.body}');
+      print('Status code: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         
-        // ✅ Guardar sesión automáticamente
+        
         if (data['user_id'] != null) {
           await _authService.saveUserSession(
             userId: data['user_id'],
@@ -44,7 +44,7 @@ class LoginService {
             userData: data,
           );
           
-          print('✅ Sesión guardada para usuario ${data['id']}');
+          print('Sesión guardada para usuario ${data['id']}');
         }
         
         return {
@@ -59,7 +59,7 @@ class LoginService {
         };
       }
     } catch (e) {
-      print('❌ Error en login: $e');
+      print('Error en login: $e');
       return {
         'success': false,
         'message': 'Error de conexión: ${e.toString()}',
@@ -70,24 +70,24 @@ class LoginService {
   /// Logout - Cierra la sesión del usuario
   static Future<void> logout() async {
     await _authService.logout();
-    print('✅ Usuario deslogueado');
+    print('Usuario deslogueado');
   }
 
   /// Verificar estado del servidor
   static Future<bool> checkServerStatus() async {
     try {
-      print('🔍 Verificando estado del servidor...');
-      print('📡 URL: $baseUrl/plant-analysis/health');
+      print('Verificando estado del servidor...');
+      print('URL: $baseUrl/plant-analysis/health');
       
       final response = await http.get(
         Uri.parse('$baseUrl/plant-analysis/health'),
       ).timeout(const Duration(seconds: 5));
 
-      print('📥 Status: ${response.statusCode}');
+      print('Status: ${response.statusCode}');
       
       return response.statusCode == 200;
     } catch (e) {
-      print('❌ Servidor no disponible: $e');
+      print('Servidor no disponible: $e');
       return false;
     }
   }

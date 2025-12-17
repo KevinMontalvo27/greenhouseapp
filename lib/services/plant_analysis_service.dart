@@ -50,7 +50,7 @@ class PlantAnalysisService {
         contentType: MediaType('image', 'jpeg'),
       );
       
-      print('📸 Detalles del archivo:');
+      print('Detalles del archivo:');
       print('  - Path: $imagePath');
       print('  - Filename: ${multipartFile.filename}');
       print('  - ContentType: ${multipartFile.contentType}');
@@ -58,12 +58,12 @@ class PlantAnalysisService {
       
       request.files.add(multipartFile);
       
-      print('📤 Headers del request:');
+      print('Headers del request:');
       request.headers.forEach((key, value) {
         print('  - $key: $value');
       });
       
-      print('📤 Files en el request:');
+      print('Files en el request:');
       for (var file in request.files) {
         print('  - Field: ${file.field}');
         print('  - Filename: ${file.filename}');
@@ -72,7 +72,7 @@ class PlantAnalysisService {
       }
       
       // Enviar request
-      print('⏳ Enviando imagen...');
+      print('Enviando imagen...');
       final streamedResponse = await request.send().timeout(
         const Duration(seconds: 30),
         onTimeout: () {
@@ -82,19 +82,19 @@ class PlantAnalysisService {
       
       final response = await http.Response.fromStream(streamedResponse);
       
-      print('📥 Status code: ${response.statusCode}');
-      print('📥 Response body: ${response.body}');
+      print('Status code: ${response.statusCode}');
+      print('Response body: ${response.body}');
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print('✅ Análisis completado');
+        print('Análisis completado');
         
         // Mostrar información del resultado
         if (data['alert_activated'] == true) {
-          print('🚨 Alerta activada - Enfermedad detectada');
-          print('🤖 Chat ID: ${data['chat_id']}');
+          print('Alerta activada - Enfermedad detectada');
+          print('Chat ID: ${data['chat_id']}');
         } else {
-          print('✅ Planta saludable');
+          print('Planta saludable');
         }
         
         return {
@@ -109,7 +109,7 @@ class PlantAnalysisService {
         };
       }
     } catch (e) {
-      print('❌ Error analizando imagen: $e');
+      print('Error analizando imagen: $e');
       return {
         'success': false,
         'message': 'Error de conexión: ${e.toString()}',
@@ -120,7 +120,7 @@ class PlantAnalysisService {
   /// Verificar estado del servicio de análisis
   static Future<bool> checkServiceStatus() async {
     try {
-      print('🔍 Verificando servicio de análisis...');
+      print('Verificando servicio de análisis...');
       
       final response = await http.get(
         Uri.parse('$baseUrl/plant-analysis/health'),
@@ -128,7 +128,7 @@ class PlantAnalysisService {
 
       return response.statusCode == 200;
     } catch (e) {
-      print('❌ Servicio no disponible: $e');
+      print('Servicio no disponible: $e');
       return false;
     }
   }

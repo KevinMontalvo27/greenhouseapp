@@ -11,11 +11,11 @@ Future<void> main() async {
   // Cargar variables de entorno
   try {
     await dotenv.load(fileName: ".env");
-    print('✅ Variables de entorno cargadas correctamente');
-    print('📡 API Base URL: ${dotenv.env['API_BASE_URL']}');
+    print('Variables de entorno cargadas correctamente');
+    print('API Base URL: ${dotenv.env['API_BASE_URL']}');
   } catch (e) {
-    print('⚠️ Error cargando .env: $e');
-    print('⚠️ Usando valores por defecto');
+    print('Error cargando .env: $e');
+    print('Usando valores por defecto');
   }
   
   // Cargar sesión del usuario (si existe)
@@ -63,13 +63,13 @@ class _SplashScreenState extends State<SplashScreen> {
     
     // Verificar si hay sesión activa
     final authService = AuthService();
-    final userId = await authService.getUserId();
+  final userId = await authService.getUserId();
     final username = await authService.getUsername();
     
     if (!mounted) return;
     
     if (userId != null && username != null) {
-      print('✅ Sesión activa detectada: $username (ID: $userId)');
+      print('Sesión activa detectada: $username (ID: $userId)');
       
       // Hay sesión activa - ir directo a selección de invernaderos
       Navigator.pushReplacement(
@@ -79,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen> {
         ),
       );
     } else {
-      print('ℹ️ No hay sesión activa - mostrar login');
+      print('No hay sesión activa - mostrar login');
       
       // No hay sesión - ir a login
       Navigator.pushReplacement(

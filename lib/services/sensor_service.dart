@@ -16,8 +16,8 @@ class SensorService {
           ? Uri.parse('$baseUrl/sensor-readings/$sensorId?limit=$limit')
           : Uri.parse('$baseUrl/sensor-readings/$sensorId');
       
-      print('📡 Obteniendo lecturas del sensor: $sensorId');
-      print('📡 URL: $uri');
+      print('Obteniendo lecturas del sensor: $sensorId');
+      print('URL: $uri');
       
       final response = await http.get(
         uri,
@@ -26,13 +26,13 @@ class SensorService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as List;
-        print('✅ ${data.length} lecturas obtenidas');
+        print('${data.length} lecturas obtenidas');
         return data;
       } else {
         throw Exception('Error al obtener lecturas: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error obteniendo lecturas: $e');
+      print('Error obteniendo lecturas: $e');
       rethrow;
     }
   }
@@ -43,7 +43,7 @@ class SensorService {
       final readings = await getSensorReadings(sensorId, limit: 1);
       return readings.isNotEmpty ? readings.first : null;
     } catch (e) {
-      print('❌ Error obteniendo última lectura: $e');
+      print('Error obteniendo última lectura: $e');
       rethrow;
     }
   }
@@ -66,7 +66,7 @@ class SensorService {
       final uri = Uri.parse('$baseUrl/sensor-readings/$sensorId/statistics')
           .replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
       
-      print('📡 Obteniendo estadísticas del sensor: $sensorId');
+      print('Obteniendo estadísticas del sensor: $sensorId');
       
       final response = await http.get(
         uri,
@@ -79,7 +79,7 @@ class SensorService {
         throw Exception('Error al obtener estadísticas');
       }
     } catch (e) {
-      print('❌ Error obteniendo estadísticas: $e');
+      print('Error obteniendo estadísticas: $e');
       rethrow;
     }
   }

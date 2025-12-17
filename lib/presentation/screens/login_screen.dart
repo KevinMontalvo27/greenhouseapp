@@ -61,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      print('🔄 Iniciando login...');
+      print('Iniciando login...');
 
       final result = await LoginService.login(
         _usernameController.text.trim(),
@@ -80,12 +80,12 @@ class _LoginScreenState extends State<LoginScreen> {
         _showWarning(
           '⚠️ Error de base de datos - Algunos datos pueden no cargarse',
         );
-        print('⚠️ Error de BD detectado: ${result['message']}');
+        print('Error de BD detectado: ${result['message']}');
         // Permitir continuar a pesar del error
       }
 
       if (result['success']) {
-        print('✅ Login exitoso');
+        print('Login exitoso');
 
         // Navegar a la pantalla de selección de invernaderos
         Navigator.pushReplacement(
@@ -96,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _showError(result['message'] ?? 'Error al iniciar sesión');
       }
     } catch (e) {
-      print('❌ Error en login: $e');
+      print('Error en login: $e');
 
       // Detectar si es un error de base de datos
       String errorMsg = e.toString().toLowerCase();
@@ -109,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _showWarning(
           '⚠️ No se pudo conectar a la base de datos - La app continuará en modo limitado',
         );
-        print('⚠️ Error de base de datos: $e');
+        print('Error de base de datos: $e');
         // Permitir continuar a pesar del error
       } else {
         if (mounted) {

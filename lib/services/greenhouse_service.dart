@@ -21,25 +21,25 @@ class GreenhouseService {
         throw Exception('Usuario no autenticado');
       }
       
-      print('📡 Obteniendo invernaderos para usuario: $finalUserId');
-      print('📡 URL: $baseUrl/greenhouses/user/$finalUserId');
+      print('Obteniendo invernaderos para usuario: $finalUserId');
+      print('URL: $baseUrl/greenhouses/user/$finalUserId');
       
       final response = await http.get(
         Uri.parse('$baseUrl/greenhouses/user/$finalUserId'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
 
-      print('📥 Status code: ${response.statusCode}');
+      print('Status code: ${response.statusCode}');
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as List;
-        print('✅ ${data.length} invernaderos obtenidos');
+        print('${data.length} invernaderos obtenidos');
         return data;
       } else {
         throw Exception('Error al obtener invernaderos: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error obteniendo invernaderos: $e');
+      print('Error obteniendo invernaderos: $e');
       rethrow;
     }
   }
