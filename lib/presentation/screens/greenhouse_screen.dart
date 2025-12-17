@@ -41,7 +41,7 @@ class _GreenhouseScreenState extends State<GreenhouseScreen> {
 
   Future<void> _loadGreenhouses() async {
     try {
-      print('📡 Cargando invernaderos...');
+      print('Cargando invernaderos...');
       final data = await GreenhouseService.getGreenhouses();
       
       setState(() {
@@ -49,9 +49,9 @@ class _GreenhouseScreenState extends State<GreenhouseScreen> {
         isLoading = false;
       });
       
-      print('✅ ${data.length} invernaderos cargados');
+      print('${data.length} invernaderos cargados');
     } catch (e) {
-      print('❌ Error cargando invernaderos: $e');
+      print('Error cargando invernaderos: $e');
       setState(() {
         error = e.toString();
         isLoading = false;
@@ -96,7 +96,7 @@ class _GreenhouseScreenState extends State<GreenhouseScreen> {
   }
 
   void _selectGreenhouse(Map<String, dynamic> greenhouse) {
-    print('🏠 Invernadero seleccionado: ${greenhouse['name']} (ID: ${greenhouse['id']})');
+    print('Invernadero seleccionado: ${greenhouse['name']} (ID: ${greenhouse['id']})');
     
     // Navegar a MainScreen (tu dashboard actual)
     Navigator.push(

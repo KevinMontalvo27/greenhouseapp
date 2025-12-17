@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import './widgets/sensor_card.dart';
-import '../gemini_screen.dart';
+import '../chat_list_screen.dart';
 import '../plant_analysis_screen.dart';
 import '../../../services/sensor_service.dart';
 
@@ -299,7 +299,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => const GeminiScreen(),
+                        builder: (context) => const ChatListScreen(),
                       ),
                     );
                   },

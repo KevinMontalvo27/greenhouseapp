@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../services/plant_analysis_service.dart';
+import 'gemini_screen.dart';
 
 class PlantAnalysisScreen extends StatefulWidget {
   const PlantAnalysisScreen({super.key});
@@ -151,7 +152,7 @@ class _PlantAnalysisScreenState extends State<PlantAnalysisScreen> {
     });
 
     try {
-      print('📸 Analizando imagen con Hugging Face...');
+      print('Analizando imagen con Hugging Face...');
 
       // Llamar al servicio de análisis (Hugging Face + Prolog)
       final result = await PlantAnalysisService.analyzePlantImage(
@@ -166,7 +167,7 @@ class _PlantAnalysisScreenState extends State<PlantAnalysisScreen> {
         final data = result['data'];
         final analysisDetails = data['analysis_details'];
         
-        print('✅ Análisis completado');
+        print('Análisis completado');
         print('Diagnóstico: ${analysisDetails['diagnostic']}');
         print('Alerta activada: ${data['alert_activated']}');
 
@@ -185,7 +186,7 @@ class _PlantAnalysisScreenState extends State<PlantAnalysisScreen> {
       setState(() {
         _isAnalyzing = false;
       });
-      print('❌ Error: $e');
+      print('Error: $e');
       _showErrorSnackBar('Error de conexión: ${e.toString()}');
     }
   }
@@ -272,11 +273,14 @@ class _PlantAnalysisScreenState extends State<PlantAnalysisScreen> {
           ),
           ElevatedButton.icon(
             onPressed: () {
-              Navigator.pop(context);
-              // TODO: Navegar al chat con Gemini
-              print('📱 Navegar al chat ID: $chatId');
-              _showComingSoonSnackBar('Navegando al chat (próximamente)');
-            },
+  Navigator.pop(context);
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => GeminiScreen(chatId: chatId),
+    ),
+  );
+},
             icon: const Icon(Icons.chat),
             label: const Text('Ver Recomendaciones'),
             style: ElevatedButton.styleFrom(

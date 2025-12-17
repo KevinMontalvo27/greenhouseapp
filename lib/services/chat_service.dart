@@ -30,74 +30,91 @@ class ChatService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as List;
-        print('✅ ${data.length} chats obtenidos');
+        print('${data.length} chats obtenidos');
         return data;
       } else {
         throw Exception('Error al obtener chats: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error obteniendo chats: $e');
+      print('Error obteniendo chats: $e');
       rethrow;
     }
   }
 
-  /// Obtener mensajes de un chat
-  static Future<List<dynamic>> getChatMessages(int chatId) async {
+static Future<List<dynamic>> getChatMessages(int chatId) async {
     try {
-      print('📡 Obteniendo mensajes del chat: $chatId');
+      // Obtener user_id de la sesión
+      final userId = await _authService.getUserId();
+      
+      if (userId == null) {
+        throw Exception('Usuario no autenticado');
+      }
+      
+      print('Obteniendo mensajes del chat: $chatId');
+      print('User ID: $userId');
       
       final response = await http.get(
-        Uri.parse('$baseUrl/chats/$chatId/messages'),
+        Uri.parse('$baseUrl/chats/$chatId/messages?user_id=$userId'),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 10));
 
+      print('Status code: ${response.statusCode}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as List;
-        print('✅ ${data.length} mensajes obtenidos');
+        print('${data.length} mensajes obtenidos');
         return data;
       } else {
+        print('Error body: ${response.body}');
         throw Exception('Error al obtener mensajes: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error obteniendo mensajes: $e');
+      print('Error obteniendo mensajes: $e');
       rethrow;
     }
   }
 
-  /// Enviar mensaje en un chat
   static Future<Map<String, dynamic>> sendMessage({
     required int chatId,
     required String message,
   }) async {
     try {
-      print('💬 Enviando mensaje al chat: $chatId');
+      // Obtener user_id de la sesión
+      final userId = await _authService.getUserId();
+      
+      if (userId == null) {
+        throw Exception('Usuario no autenticado');
+      }
+      
+      print('Enviando mensaje al chat: $chatId');
+      print('User ID: $userId');
       
       final response = await http.post(
-        Uri.parse('$baseUrl/chats/$chatId/message'),
+        Uri.parse('$baseUrl/chats/$chatId/messages?user_id=$userId'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'author': 'user',
           'message': message,
         }),
-      ).timeout(const Duration(seconds: 15));
+      ).timeout(const Duration(seconds: 30)); // Timeout aumentado para Gemini
 
-      print('📥 Status code: ${response.statusCode}');
+      print('Status code: ${response.statusCode}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
-        print('✅ Mensaje enviado');
+        print('Mensaje enviado y respuesta de Gemini recibida');
         return {
           'success': true,
           'data': data,
         };
       } else {
+        print('Error body: ${response.body}');
         return {
           'success': false,
           'message': 'Error al enviar mensaje: ${response.statusCode}',
         };
       }
     } catch (e) {
-      print('❌ Error enviando mensaje: $e');
+      print('Error enviando mensaje: $e');
       return {
         'success': false,
         'message': 'Error de conexión: ${e.toString()}',
@@ -108,7 +125,7 @@ class ChatService {
   /// Obtener información de un chat específico
   static Future<Map<String, dynamic>> getChatById(int chatId) async {
     try {
-      print('📡 Obteniendo información del chat: $chatId');
+      print('Obteniendo información del chat: $chatId');
       
       final response = await http.get(
         Uri.parse('$baseUrl/chats/$chatId'),
@@ -121,7 +138,7 @@ class ChatService {
         throw Exception('Error al obtener chat');
       }
     } catch (e) {
-      print('❌ Error obteniendo chat: $e');
+      print('Error obteniendo chat: $e');
       rethrow;
     }
   }

@@ -41,7 +41,7 @@ class AuthService {
     _username = username;
     _userData = userData;
     
-    print('✅ Sesión guardada: Usuario $userId ($username)');
+    print('Sesión guardada: Usuario $userId ($username)');
   }
 
   /// Obtener el ID del usuario actual
@@ -107,7 +107,7 @@ class AuthService {
     _username = null;
     _userData = null;
     
-    print('✅ Sesión cerrada');
+    print('Sesión cerrada');
   }
 
   /// Cargar sesión al iniciar la app
@@ -123,9 +123,9 @@ class AuthService {
     }
     
     if (_userId != null) {
-      print('✅ Sesión cargada: Usuario $_userId ($_username)');
+      print('Sesión cargada: Usuario $_userId ($_username)');
     } else {
-      print('ℹ️ No hay sesión guardada');
+      print('ℹNo hay sesión guardada');
     }
   }
 
